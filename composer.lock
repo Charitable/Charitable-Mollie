@@ -1,0 +1,60 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "8513c5f41c7b08f68afab1bea7944c11",
+    "packages": [
+        {
+            "name": "wpcharitable/charitable-extension-activation",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Charitable/Charitable-Extension-Activation.git",
+                "reference": "ddc5d8df376003ff2c6e181e9da3e16e8b0a8d80"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Charitable/Charitable-Extension-Activation/zipball/ddc5d8df376003ff2c6e181e9da3e16e8b0a8d80",
+                "reference": "ddc5d8df376003ff2c6e181e9da3e16e8b0a8d80",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Charitable\\Extensions\\Activation\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "WP Charitable",
+                    "homepage": "https://www.wpcharitable.com"
+                }
+            ],
+            "description": "Charitable's extension activation helper class.",
+            "homepage": "https://www.wpcharitable.com/",
+            "keywords": [
+                "charitable",
+                "wordpress",
+                "wpcharitable"
+            ],
+            "time": "2020-09-09T01:49:17+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

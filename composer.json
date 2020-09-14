@@ -1,0 +1,5 @@
+{
+    "require": {
+        "wpcharitable/charitable-extension-activation": "^1.0"
+    }
+}
