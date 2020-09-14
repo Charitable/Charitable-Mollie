@@ -12,6 +12,8 @@
 
 namespace Charitable\Pro\Mollie\Gateway\Webhook;
 
+use Charitable\Pro\Mollie\Gateway\Api as Api;
+
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -24,7 +26,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 	 *
 	 * @since 1.0.0
 	 */
-	class Interpreter implements \Charitable_Webhook_Interpreter_Interface {
+	class Interpreter implements \Charitable_Webhook_Interpreter_Interface, \Charitable_Webhook_Intepreter_Donations_Interface {
 
 		/**
 		 * Valid webhook.
@@ -52,6 +54,24 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @var   int
 		 */
 		private $donation_id;
+
+		/**
+		 * The donation object.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @var   Charitable_Donation
+		 */
+		private $donation;
+
+		/**
+		 * The payment object from Mollie.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @var   object
+		 */
+		private $payment;
 
 		/**
 		 * The parsed data.
@@ -126,18 +146,11 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @return string
 		 */
 		public function get_event_subject() {
-			switch ( $this->get_txn_type() ) {
-				case 'subscr_signup':
-				case 'subscr_payment':
-				case 'subscr_cancel':
-				case 'subscr_modify':
-				case 'subscr_failed':
-				case 'subscr_eot':
-					return 'subscription';
-
-				default:
-					return 'donation';
+			if ( isset( $this->payment->subscriptionId ) ) {
+				return 'subscription';
 			}
+
+			return 'donation';
 		}
 
 		/**
@@ -145,28 +158,164 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 *
 		 * @since  1.0.0
 		 *
-		 * @return \Charitable\Pro\Mollie\Gateway\Webhook\Donation_Interpreter|false
+		 * @return \Charitable\Pro\Mollie\Gateway\Webhook\Interpreter|false
 		 */
 		public function get_donations_interpreter() {
-			return new Donation_Interpreter( $this );
+			return $this;
 		}
 
 		/**
-		 * Get the donation ID for this webhook.
+		 * Get the donation object.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return Charitable_Donation|false Returns the donation if one matches the webhook.
+		 */
+		public function get_donation() {
+			if ( ! isset( $this->donation ) ) {
+				/* The donation ID needs to match a donation post type. */
+				if ( Charitable::DONATION_POST_TYPE !== get_post_type( $this->donation_id ) ) {
+					return false;
+				}
+
+				$this->donation = charitable_get_donation( $this->donation_id );
+
+				if ( 'mollie' !== $this->donation->get_gateway() ) {
+					$this->set_response( __( 'Incorrect gateway', 'charitable-mollie' ) );
+					$this->donation = false;
+				}
+			}
+
+			return $this->donation;
+		}
+
+		/**
+		 * Get the Mollie payment object.
 		 *
 		 * @since  1.0.0
 		 *
-		 * @return int
+		 * @return object|false Returns the payment object if one exists.
 		 */
-		public function get_donation_id() {
-			$custom = json_decode( $this->data['custom'], true );
-
-			if ( is_array( $custom ) && array_key_exists( 'donation_id', $custom ) ) {
-				return absint( $custom['donation_id'] );
+		public function get_payment() {
+			if ( ! isset( $this->payment ) ) {
+				$api = new Api( $this->donation->get( 'test_mode' ) );
+				$this->payment = $api->get( 'payments/'. $this->data['id'] . '?embed=refunds' );
+				error_log( var_export( $this->payment, true ) );
 			}
 
-			return absint( $custom );
+			return $this->payment;
 		}
+
+		/**
+		 * Get the type of event described by the webhook.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return string
+		 */
+		public function get_event_type() {
+			if ( $this->get_refund_amount() ) {
+				return 'refund';
+			}
+
+			switch ( $this->get_payment()->status ) {
+				case 'open':
+				case 'pending':
+					break;
+
+				case 'canceled':
+					break;
+
+				case 'expired':
+					break;
+
+				case 'failed':
+					break;
+
+				case 'paid':
+					break;
+			}
+		}
+
+		/**
+		 * Get the refunded amount.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return float|false The amount to be refunded, or false if this is not a refund.
+		 */
+		public function get_refund_amount() {
+			if ( ! isset( $this->payment->amountRefunded ) ) {
+				return false;
+			}
+
+			return $this->payment->amountRefunded->value;
+		}
+
+		/**
+		 * Get a log message to include when adding the refund.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return string
+		 */
+		public function get_refund_log_message() {
+			// $payment = $this->get_payment->
+		}
+
+		/**
+		 * Return the gateway transaction ID.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return string|false The gateway transaction ID if available, otherwise false.
+		 */
+		public function get_gateway_transaction_id();
+
+		/**
+		 * Return the donation status based on the webhook event.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return string
+		 */
+		public function get_donation_status();
+
+		/**
+		 * Return an array of log messages to update the donation.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return array
+		 */
+		public function get_logs();
+
+		/**
+		 * Return an array of meta data to add/update for the donation.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return array
+		 */
+		public function get_meta();
+
+		/**
+		 * Get the response message.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return string
+		 */
+		public function get_response_message();
+
+		/**
+		 * Get the response HTTP status.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return int
+		 */
+		public function get_response_status();
 
 		/**
 		 * Validate the webhook request.
@@ -177,62 +326,41 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 */
 		private function parse_request() {
 			if ( ! $this->is_valid_request() ) {
-				$this->set_invalid_request( __( 'Invalid Request', 'charitable' ) );
+				$this->set_invalid_request( __( 'Invalid request', 'charitable-mollie' ) );
 				return;
 			}
 
-			$this->data = @file_get_contents( 'php://input' );
+			$payload = file_get_contents( 'php://input' );
+
+			if ( empty( $payload ) ) {
+				$this->set_invalid_request( __( 'Empty data', 'charitable-mollie' ) );
+				return;
+			}
+
+			parse_str( $payload, $this->data );
 
 			if ( defined( 'CHARITABLE_DEBUG' ) && CHARITABLE_DEBUG ) {
 				error_log( var_export( $this->data, true ) );
 			}
 
-			if ( empty( $this->data ) ) {
-				$this->set_invalid_request( __( 'Empty Data', 'charitable' ) );
+			if ( empty( $this->data ) || ! array_key_exists( 'id', $this->data ) ) {
+				$this->set_invalid_request( __( 'Invalid data', 'charitable-mollie' ) );
 				return;
 			}
 
-			if ( ! $this->verify_ipn() ) {
-				die( __( 'IPN Verification Failure', 'charitable' ) );
+			/* See if we have a donation stored with this transaction ID. */
+			$this->donation_id = charitable_get_donation_by_transaction_id( $this->data['id'] );
+
+			/* Check that the donation is valid. */
+			if ( is_null( $this->donation_id ) || ! $this->get_donation() ) {
+				$this->set_invalid_request( __( 'No such donation here.', 'charitable-mollie' ) );
+				return;
 			}
 
-			$defaults = array(
-				'payment_status' => '',
-				'custom'         => 0,
-				'txn_type'       => '',
-			);
-
-			$this->data        = wp_parse_args( $this->data, $defaults );
-			$this->donation_id = $this->get_donation_id();
-
-			if ( ! $this->donation_id ) {
-				$this->set_invalid_request( __( 'Missing Donation ID', 'charitable' ) );
-			}
-
-			$txn_type = $this->get_txn_type();
-
-			if ( has_action( 'charitable_paypal_' . $txn_type ) ) {
-				/**
-				 * Do something with this particular transaction type.
-				 *
-				 * @since 1.0.0
-				 * @since 1.0.0 Moved hook to \Charitable\Pro\Mollie\Gateway\Webhook\Interpreter::parse_request().
-				 *
-				 * @param array $data        The data received from PayPal.
-				 * @param int   $donation_id The donation ID.
-				 */
-				do_action( 'charitable_paypal_' . $txn_type, $this->data, $this->donation_id );
-			} else {
-				/**
-				 * Do something with a web_accept ipn.
-				 *
-				 * @since 1.0.0
-				 * @since 1.0.0 Moved hook to \Charitable\Pro\Mollie\Gateway\Webhook\Interpreter::parse_request().
-				 *
-				 * @param array $data        The data received from PayPal.
-				 * @param int   $donation_id The donation ID.
-				 */
-				do_action( 'charitable_paypal_web_accept', $this->data, $this->donation_id );
+			/* Get the payment from Mollie. */
+			if ( ! $this->get_payment() ) {
+				$this->set_invalid_request( __( 'Invalid payment', 'charitable-mollie' ) );
+				return;
 			}
 		}
 
@@ -248,132 +376,6 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		}
 
 		/**
-		 * Return the posted IPN data.
-		 *
-		 * @since  1.0.0
-		 *
-		 * @return mixed[]
-		 */
-		private function get_ipn_data() {
-			$post_data = '';
-
-			/* Fallback just in case post_max_size is lower than needed. */
-			if ( ini_get( 'allow_url_fopen' ) ) {
-				$post_data = file_get_contents( 'php://input' );
-			} else {
-				ini_set( 'post_max_size', '12M' );
-			}
-
-			if ( strlen( $post_data ) ) {
-				$arg_separator = ini_get( 'arg_separator.output' );
-				$data_string   = 'cmd=_notify-validate' . $arg_separator . $post_data;
-
-				/* Convert collected post data to an array */
-				parse_str( $data_string, $data );
-
-				return $data;
-			}
-
-			/* Return an empty array if there are no POST variables. */
-			if ( empty( $_POST ) ) {
-				return array();
-			}
-
-			$data = array(
-				'cmd' => '_notify-validate',
-			);
-
-			return array_merge( $data, $_POST );
-		}
-
-		/**
-		 * Validates an IPN request with PayPal.
-		 *
-		 * @since  1.0.0
-		 *
-		 * @return boolean
-		 */
-		private function verify_ipn() {
-			if ( charitable_get_option( array( 'gateways_paypal', 'disable_ipn_verification' ) ) ) {
-				return true;
-			}
-
-			/* Get response */
-			$response = wp_remote_post(
-				$this->get_ipn_check_url(),
-				array(
-					'method'      => 'POST',
-					'timeout'     => 45,
-					'redirection' => 5,
-					'httpversion' => '1.1',
-					'blocking'    => true,
-					'headers'     => array(
-						'host'         => 'www.paypal.com',
-						'connection'   => 'close',
-						'content-type' => 'application/x-www-form-urlencoded',
-						'post'         => '/cgi-bin/webscr HTTP/1.1',
-
-					),
-					'sslverify'   => false,
-					'body'        => $this->data,
-				)
-			);
-
-			/**
-			 * Filter whether the PayPal IPN was verified.
-			 *
-			 * @since 1.0.0
-			 * @since 1.0.0 Moved hook to \Charitable\Pro\Mollie\Gateway\Webhook\Interpreter::verify_ipn().
-			 *
-			 * @param boolean        $valid    Whether it has been verified.
-			 * @param array|WP_Error $response Array in case of successful request. WP_Error otherwise.
-			 */
-			return apply_filters( 'charitable_paypal_ipn_verification', $this->is_valid_api_response( $response ), $response );
-		}
-
-		/**
-		 * Return the URL to send our IPN check to.
-		 *
-		 * @since  1.0.0
-		 *
-		 * @return string
-		 */
-		private function get_ipn_check_url() {
-			if ( charitable_get_option( 'test_mode' ) ) {
-				$paypal_uri = 'https://ipnpb.sandbox.';
-			} else {
-				$paypal_uri = 'https://ipnpb.';
-			}
-
-			$paypal_uri .= 'paypal.com/cgi-bin/webscr';
-
-			/**
-			 * Filter the PayPal URI.
-			 *
-			 * @since 1.0.0
-			 * @since 1.5.4 Added $ssl_check and $ipn_check parameters.
-			 * @since 1.0.0 Added hook to \Charitable\Pro\Mollie\Gateway\Webhook\Interpreter::get_ipn_check_url().
-			 *
-			 * @param string  $paypal_uri The URL.
-			 * @param boolean $ssl_check  Whether to check SSL.
-			 * @param boolean $ipn_check  Whether this is for an IPN request.
-			 */
-			return apply_filters( 'charitable_paypal_uri', $paypal_uri, true, true );
-		}
-
-		/**
-		 * Returns whether the API response we received is valid.
-		 *
-		 * @since  1.0.0
-		 *
-		 * @param  array|WP_Error $api_response Array in case of successful request. WP_Error otherwise.
-		 * @return boolean
-		 */
-		private function is_valid_api_response( $api_response ) {
-			return ! is_wp_error( $api_response ) && 'VERIFIED' === $api_response['body'];
-		}
-
-		/**
 		 * Set this as an invalid request.
 		 *
 		 * @since  1.0.0
@@ -385,7 +387,6 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 			$this->valid    = false;
 			$this->response = '';
 		}
-
 	}
 
 endif;
