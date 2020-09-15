@@ -26,7 +26,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 	 *
 	 * @since 1.0.0
 	 */
-	class Interpreter implements \Charitable_Webhook_Interpreter_Interface, \Charitable_Webhook_Intepreter_Donations_Interface {
+	class Interpreter implements \Charitable_Webhook_Interpreter_Interface, \Charitable_Webhook_Interpreter_Donations_Interface {
 
 		/**
 		 * Valid webhook.
@@ -45,6 +45,15 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @var   string
 		 */
 		private $response;
+
+		/**
+		 * The status code to send in response.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @var   int
+		 */
+		private $status;
 
 		/**
 		 * The donation ID.
@@ -104,6 +113,18 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		}
 
 		/**
+		 * Checks whether a given property is set.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @param  string $prop The property to check.
+		 * @return boolean
+		 */
+		public function __isset( $prop ) {
+			return isset( $this->$prop );
+		}
+
+		/**
 		 * Check whether this is a valid webhook.
 		 *
 		 * @since  1.0.0
@@ -122,7 +143,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @return boolean
 		 */
 		public function has_processor() {
-			return false;
+			return true;
 		}
 
 		/**
@@ -133,7 +154,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @return false|Charitable_Webhook_Processor
 		 */
 		public function get_processor() {
-			return false;
+			return new Processor( $this );
 		}
 
 		/**
@@ -174,14 +195,14 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		public function get_donation() {
 			if ( ! isset( $this->donation ) ) {
 				/* The donation ID needs to match a donation post type. */
-				if ( Charitable::DONATION_POST_TYPE !== get_post_type( $this->donation_id ) ) {
+				if ( \Charitable::DONATION_POST_TYPE !== get_post_type( $this->donation_id ) ) {
 					return false;
 				}
 
 				$this->donation = charitable_get_donation( $this->donation_id );
 
 				if ( 'mollie' !== $this->donation->get_gateway() ) {
-					$this->set_response( __( 'Incorrect gateway', 'charitable-mollie' ) );
+					$this->set_invalid_request( __( 'Incorrect gateway', 'charitable-mollie' ) );
 					$this->donation = false;
 				}
 			}
@@ -198,9 +219,8 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 */
 		public function get_payment() {
 			if ( ! isset( $this->payment ) ) {
-				$api = new Api( $this->donation->get( 'test_mode' ) );
-				$this->payment = $api->get( 'payments/'. $this->data['id'] . '?embed=refunds' );
-				error_log( var_export( $this->payment, true ) );
+				$api           = new Api( $this->donation->get( 'test_mode' ) );
+				$this->payment = $api->get( 'payments/' . $this->data['id'] . '?embed=refunds' );
 			}
 
 			return $this->payment;
@@ -214,26 +234,21 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @return string
 		 */
 		public function get_event_type() {
+			/* Payment has been fully refunded. */
 			if ( $this->get_refund_amount() ) {
 				return 'refund';
 			}
 
 			switch ( $this->get_payment()->status ) {
-				case 'open':
-				case 'pending':
-					break;
-
 				case 'canceled':
-					break;
-
 				case 'expired':
-					break;
+					return 'cancellation';
 
 				case 'failed':
-					break;
+					return 'failed_payment';
 
 				case 'paid':
-					break;
+					return 'completed_payment';
 			}
 		}
 
@@ -245,11 +260,11 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @return float|false The amount to be refunded, or false if this is not a refund.
 		 */
 		public function get_refund_amount() {
-			if ( ! isset( $this->payment->amountRefunded ) ) {
+			if ( '0.00' === $this->payment->amountRefunded->value ) {
 				return false;
 			}
 
-			return $this->payment->amountRefunded->value;
+			return end( $this->payment->_embedded->refunds )->amount->value;
 		}
 
 		/**
@@ -260,7 +275,18 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @return string
 		 */
 		public function get_refund_log_message() {
-			// $payment = $this->get_payment->
+			return end( $this->payment->_embedded->refunds )->description;
+		}
+
+		/**
+		 * Get all the refunds for this payment.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return array
+		 */
+		public function get_refunds() {
+			return $this->payment->_embedded->refunds;
 		}
 
 		/**
@@ -270,7 +296,20 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 *
 		 * @return string|false The gateway transaction ID if available, otherwise false.
 		 */
-		public function get_gateway_transaction_id();
+		public function get_gateway_transaction_id() {
+			return $this->payment->id;
+		}
+
+		/**
+		 * Return the gateway transaction URL.
+		 *
+		 * @since  1.7.0
+		 *
+		 * @return string|false The URL if available, otherwise false.
+		 */
+		public function get_gateway_transaction_url() {
+			return $this->payment->_links->dashboard->href;
+		}
 
 		/**
 		 * Return the donation status based on the webhook event.
@@ -279,7 +318,23 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 *
 		 * @return string
 		 */
-		public function get_donation_status();
+		public function get_donation_status() {
+			switch ( $this->payment->status ) {
+				case 'open':
+				case 'pending':
+					return 'charitable-pending';
+
+				case 'canceled':
+				case 'expired':
+					return 'charitable-cancelled';
+
+				case 'failed':
+					return 'charitable-failed';
+
+				case 'paid':
+					return 'charitable-completed';
+			}
+		}
 
 		/**
 		 * Return an array of log messages to update the donation.
@@ -288,7 +343,26 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 *
 		 * @return array
 		 */
-		public function get_logs();
+		public function get_logs() {
+			$logs = array();
+
+			switch ( $this->payment->status ) {
+				case 'expired':
+					$logs[] = __( 'Payment expired.', 'charitable-mollie' );
+					break;
+			}
+
+			/* Log refund notes. */
+			if ( $this->get_refund_amount() && $this->payment->description !== $this->get_refund_log_message() ) {
+				$logs[] = sprintf(
+					/* translators: %s: refund note */
+					__( 'Refund note: "%s"', 'charitable-mollie' ),
+					$this->get_refund_log_message()
+				);
+			}
+
+			return $logs;
+		}
 
 		/**
 		 * Return an array of meta data to add/update for the donation.
@@ -297,7 +371,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 *
 		 * @return array
 		 */
-		public function get_meta();
+		public function get_meta() {
+			return array();
+		}
 
 		/**
 		 * Get the response message.
@@ -306,7 +382,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 *
 		 * @return string
 		 */
-		public function get_response_message();
+		public function get_response_message() {
+
+		}
 
 		/**
 		 * Get the response HTTP status.
@@ -315,7 +393,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 *
 		 * @return int
 		 */
-		public function get_response_status();
+		public function get_response_status() {
+
+		}
 
 		/**
 		 * Validate the webhook request.
@@ -362,6 +442,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 				$this->set_invalid_request( __( 'Invalid payment', 'charitable-mollie' ) );
 				return;
 			}
+
+			/* We're still here. Webhook is valid. */
+			$this->valid = true;
 		}
 
 		/**
@@ -381,11 +464,13 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @since  1.0.0
 		 *
 		 * @param  string $response The response to send.
+		 * @param  int    $status   The status code to send in response.
 		 * @return void
 		 */
-		private function set_invalid_request( $response = '' ) {
+		private function set_invalid_request( $response = '', $status = 500 ) {
 			$this->valid    = false;
-			$this->response = '';
+			$this->response = $response;
+			$this->status   = $status;
 		}
 	}
 

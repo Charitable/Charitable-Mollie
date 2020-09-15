@@ -58,6 +58,17 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Response' ) ) :
 		}
 
 		/**
+		 * Return the gateway transaction url
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return string|false
+		 */
+		public function get_gateway_transaction_url() {
+			return $this->response->_links->dashboard->href;
+		}
+
+		/**
 		 * Returns whether the payment requires some further action.
 		 *
 		 * @since  1.0.0

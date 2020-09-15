@@ -193,7 +193,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 		 * @return boolean
 		 */
 		public function is_donation_refundable( \Charitable_Donation $donation ) {
-			return $this->api()->has_api_key() && $donation->get_gateway_transaction_id();
+			return $this->api()->has_valid_api_key() && $donation->get_gateway_transaction_id();
 		}
 
 		/**
