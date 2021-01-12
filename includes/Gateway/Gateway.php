@@ -23,7 +23,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 	 *
 	 * @since 1.0.0
 	 */
-	class Gateway extends \Charitable_Gateway implements \Charitable_Gateway_Payment_Request_API_Interface {
+	class Gateway extends \Charitable_Gateway {
 
 		/** The gateway ID. */
 		const ID = 'mollie';
@@ -91,11 +91,14 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 			/* Register our new gateway. */
 			add_filter( 'charitable_payment_gateways', array( $this, 'register_gateway' ) );
 
-			/* Register our webhook interpreter. */
-			add_filter( 'charitable_webhook_interpreter_class_mollie', array( $this, 'get_webhook_interpreter_class' ) );
-
 			/* Refund a donation from the dashboard. */
 			add_action( 'charitable_process_refund_mollie', array( $this, 'refund_donation_from_dashboard' ) );
+
+			/* Register payment processor. */
+			$this->register_payment_processor();
+
+			/* Register webhook receiver. */
+			$this->register_webhook_receiver();
 		}
 
 		/**
@@ -155,15 +158,66 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 			return $gateways;
 		}
 
+
 		/**
-		 * Get the webhook interpreter class name.
+		 * Register the Mollie payment processor.
 		 *
 		 * @since  1.0.0
 		 *
-		 * @return string
+		 * @return void
 		 */
-		public function get_webhook_interpreter_class() {
-			return '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter';
+		public function register_payment_processor() {
+			$path = \charitable_mollie()->get_path( 'directory' );
+
+			require_once $path . 'charitable-payment-processors/Payment/ProcessorInterface.php';
+			require_once $path . 'charitable-payment-processors/Payment/RequestInterface.php';
+			require_once $path . 'charitable-payment-processors/Payment/ResponseInterface.php';
+			require_once $path . 'charitable-payment-processors/DonationDataMapper.php';
+			require_once $path . 'charitable-payment-processors/PaymentProcessors.php';
+			require_once $path . 'charitable-payment-processors/Processor.php';
+
+			\Charitable\PaymentProcessors\PaymentProcessors::register( self::ID, '\Charitable\Pro\Mollie\Gateway\Payment\Processor' );
+
+			add_filter( 'charitable_process_donation_' . self::ID, array( '\Charitable\PaymentProcessors\Processor', 'process' ), 10, 3 );
+		}
+
+		/**
+		 * Register the Mollie webhook receiver.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return void
+		 */
+		public function register_webhook_receiver() {
+			$path = \charitable_mollie()->get_path( 'directory' );
+
+			require_once $path . 'charitable-webhook-receivers/Interpreters/DonationInterpreterInterface.php';
+			require_once $path . 'charitable-webhook-receivers/Processors/ProcessorInterface.php';
+			require_once $path . 'charitable-webhook-receivers/Processors/Processor.php';
+			require_once $path . 'charitable-webhook-receivers/Processors/DonationProcessor.php';
+			require_once $path . 'charitable-webhook-receivers/Receivers/ReceiverInterface.php';
+			require_once $path . 'charitable-webhook-receivers/Handler.php';
+			require_once $path . 'charitable-webhook-receivers/Receivers.php';
+
+			\Charitable\WebhookReceivers\Receivers::register( Gateway::ID, '\Charitable\Pro\Mollie\Gateway\Webhook\Receiver' );
+
+			/**
+			 * This is a temporary hack to ensure the handler works.
+			 */
+			add_action( 'charitable_process_ipn_' . self::ID, array( $this, 'process_webhook' ) );
+		}
+
+		/**
+		 * Process a Mollie webhook.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return void
+		 */
+		public function process_webhook() {
+			/* Stop infinite recursion. */
+			remove_action( 'charitable_process_ipn_' . self::ID, array( $this, 'process_webhook' ) );
+			\Charitable\WebhookReceivers\Handler::handle( self::ID );
 		}
 
 		/**
