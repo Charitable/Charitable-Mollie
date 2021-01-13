@@ -37,7 +37,7 @@ add_action(
 		/* Load Activation script. */
 		require_once( 'vendor/wpcharitable/charitable-extension-activation/src/Activation.php' );
 
-		$activation = new Activation( '1.7' );
+		$activation = new Activation( '1.6.45' );
 
 		if ( $activation->ok() ) {
 			spl_autoload_register( 'autoloader' );
@@ -52,7 +52,7 @@ add_action(
 		$activation->installation_notice = __( 'Charitable Mollie requires Charitable! Please <a href="%s">install it</a> to continue.', 'charitable-mollie' );
 
 		/* translators: %s: link to update Charitable */
-		$activation->update_notice = __( 'Charitable Mollie requires Charitable 1.7+! Please <a href="%s">update Charitable</a> to continue.', 'charitable-mollie' );
+		$activation->update_notice = __( 'Charitable Mollie requires Charitable 1.6.45+! Please <a href="%s">update Charitable</a> to continue.', 'charitable-mollie' );
 
 		$activation->run();
 
