@@ -23,21 +23,30 @@ class Activation {
 
 	public $activation_notice;
 	public $installation_notice;
+	public $update_notice;
 
 	private $plugin_name;
 	private $has_charitable;
 	private $charitable_base;
+	private $has_min_version;
 
 	/**
 	 * Setup the activation class
 	 *
 	 * @since  1.0.0
 	 *
+	 * @param  string $min_version Minimum version required.
 	 * @return void
 	 */
-	public function __construct() {
+	public function __construct( $min_version = '1.0.0' ) {
 		/* If ABSPATH isn't defined, we can't use this. */
 		if ( ! defined( '\ABSPATH' ) ) {
+			return;
+		}
+
+		/* Charitable is active. */
+		if ( class_exists( '\Charitable' ) ) {
+			$this->has_min_version = version_compare( \Charitable::VERSION, $min_version, '>=' );
 			return;
 		}
 
@@ -52,6 +61,17 @@ class Activation {
 				break;
 			}
 		}
+	}
+
+	/**
+	 * Check whether it's safe to activate the plugin.
+	 *
+	 * @since  1.1.0
+	 *
+	 * @return boolean
+	 */
+	public function ok() {
+		return $this->has_min_version;
 	}
 
 	/**
@@ -73,7 +93,19 @@ class Activation {
 	 * @return void
 	 */
 	public function missing_charitable_notice() {
-		if ( $this->has_charitable ) {
+		if ( ! $this->has_min_version ) {
+			if ( ! isset( $this->update_notice ) ) {
+				return;
+			}
+
+			$notice = $this->update_notice;
+			$url    = esc_url(
+				wp_nonce_url(
+					admin_url( 'update.php?action=upgrade-plugin&plugin=' . $this->charitable_base ),
+					'upgrade-plugin_' . $this->charitable_base
+				)
+			);
+		} elseif ( $this->has_charitable ) {
 			if ( ! isset( $this->activation_notice ) ) {
 				return;
 			}

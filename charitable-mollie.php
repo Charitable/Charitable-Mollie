@@ -34,15 +34,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_action(
 	'plugins_loaded',
 	function() {
-		/* Load Composer packages. */
-		require_once( 'vendor/autoload.php' );
+		/* Load Activation script. */
+		require_once( 'vendor/wpcharitable/charitable-extension-activation/src/Activation.php' );
 
-		if ( class_exists( 'Charitable' ) ) {
+		$activation = new Activation( '1.7' );
+
+		if ( $activation->ok() ) {
+			spl_autoload_register( 'autoloader' );
+
 			return new Mollie( __FILE__ );
 		}
-
-		/* Charitable is not installed, so add an activation/installation notice. */
-		$activation = new Activation();
 
 		/* translators: %s: link to activate Charitable */
 		$activation->activation_notice = __( 'Charitable Mollie requires Charitable! Please <a href="%s">activate it</a> to continue.', 'charitable-mollie' );
@@ -50,7 +51,12 @@ add_action(
 		/* translators: %s: link to install Charitable */
 		$activation->installation_notice = __( 'Charitable Mollie requires Charitable! Please <a href="%s">install it</a> to continue.', 'charitable-mollie' );
 
+		/* translators: %s: link to update Charitable */
+		$activation->update_notice = __( 'Charitable Mollie requires Charitable 1.7+! Please <a href="%s">update Charitable</a> to continue.', 'charitable-mollie' );
+
 		$activation->run();
+
+		return false;
 	}
 );
 
@@ -68,33 +74,31 @@ add_action(
  * @param  string $class The fully-qualified class name.
  * @return void
  */
-spl_autoload_register(
-	function ( $class ) {
-		/* Plugin namespace prefix. */
-		$prefix = 'Charitable\\Pro\\Mollie\\';
+function autoloader( $class ) {
+	/* Plugin namespace prefix. */
+	$prefix = 'Charitable\\Pro\\Mollie\\';
 
-		/* Base directory for the namespace prefix. */
-		$base_dir = __DIR__ . '/includes/';
+	/* Base directory for the namespace prefix. */
+	$base_dir = __DIR__ . '/includes/';
 
-		/* Check if the class name uses the namespace prefix. */
-		$len = strlen( $prefix );
+	/* Check if the class name uses the namespace prefix. */
+	$len = strlen( $prefix );
 
-		if ( 0 !== strncmp( $prefix, $class, $len ) ) {
-			return;
-		}
-
-		/* Get the relative class name. */
-		$relative_class = substr( $class, $len );
-
-		/* Get the file path. */
-		$file = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
-
-		/* Bail out if the file doesn't exist. */
-		if ( ! file_exists( $file ) ) {
-			return;
-		}
-
-		/* Finally, require the file. */
-		require $file;
+	if ( 0 !== strncmp( $prefix, $class, $len ) ) {
+		return;
 	}
-);
+
+	/* Get the relative class name. */
+	$relative_class = substr( $class, $len );
+
+	/* Get the file path. */
+	$file = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
+
+	/* Bail out if the file doesn't exist. */
+	if ( ! file_exists( $file ) ) {
+		return;
+	}
+
+	/* Finally, require the file. */
+	require $file;
+}
