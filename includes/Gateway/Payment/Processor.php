@@ -12,8 +12,8 @@
 
 namespace Charitable\Pro\Mollie\Gateway\Payment;
 
-use Charitable\PaymentProcessors\DonationDataMapper;
-use Charitable\PaymentProcessors\Payment\ProcessorInterface;
+use Charitable\Helpers\DonationDataMapper;
+use Charitable\Gateways\Payment\ProcessorInterface;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -35,7 +35,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Processor' ) ) :
 		 * @since  1.0.0
 		 *
 		 * @param  \Charitable_Donation $donation The donation to make a payment request for.
-		 * @return \Charitable\PaymentProcessors\Payment\RequestInterface
+		 * @return \Charitable\Gateways\Payment\RequestInterface
 		 */
 		public function get_payment_request( \Charitable_Donation $donation ) {
 			$data_map = new DonationDataMapper( $donation );

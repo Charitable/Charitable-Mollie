@@ -7,7 +7,7 @@
  * Author:            WP Charitable
  * Author URI:        https://www.wpcharitable.com
  * Requires at least: 5.0
- * Tested up to:      5.5.1
+ * Tested up to:      5.6
  *
  * Text Domain: charitable-mollie
  * Domain Path: /languages/

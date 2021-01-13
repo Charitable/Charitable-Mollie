@@ -10,9 +10,9 @@
  * @version   version
  */
 
-namespace Charitable\PaymentProcessors;
+namespace Charitable\Gateways\Payment;
 
-use Charitable\PaymentProcessors\Payment\ProcessorInterface;
+use Charitable\Gateways\Payment\ProcessorInterface;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since version
  */
-class PaymentProcessors {
+class Processors {
 
 	/**
 	 * Registered processors.

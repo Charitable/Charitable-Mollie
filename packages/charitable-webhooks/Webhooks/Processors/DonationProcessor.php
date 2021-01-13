@@ -10,10 +10,10 @@
  * @version   1.7.0
  */
 
-namespace Charitable\WebhookReceivers\Processors;
+namespace Charitable\Webhooks\Processors;
 
-use Charitable\WebhookReceivers\Interpreters\DonationInterpreterInterface;
-use Charitable\PaymentProcessors\Processor as PaymentProcessor;
+use Charitable\Webhooks\Interpreters\DonationInterpreterInterface;
+use Charitable\Gateways\Processor as PaymentProcessor;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -218,7 +218,7 @@ class DonationProcessor extends Processor {
 		$this->donation->set_gateway_transaction_id( $this->interpreter->get_gateway_transaction_id() );
 
 		/** @todo Replace with call to $this->donation->set_gateway_transaction_url() once it's in core */
-		PaymentProcessor::set_gateway_transaction_url( $this->interpreter->get_gateway_transaction_url(), $this->donation );
+		\Charitable\Packages\Webhooks\set_gateway_transaction_url( $this->interpreter->get_gateway_transaction_url(), $this->donation );
 	}
 
 	/**

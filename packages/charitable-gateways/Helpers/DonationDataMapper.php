@@ -12,7 +12,7 @@
  * @version   1.7.0
  */
 
-namespace Charitable\PaymentProcessors;
+namespace Charitable\Helpers;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {

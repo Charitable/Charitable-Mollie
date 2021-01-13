@@ -10,9 +10,9 @@
  * @version   version
  */
 
-namespace Charitable\WebhookReceivers;
+namespace Charitable\Webhooks;
 
-use Charitable\WebhookReceivers\Receivers\ReceiverInterface;
+use Charitable\Webhooks\Receivers\ReceiverInterface;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {

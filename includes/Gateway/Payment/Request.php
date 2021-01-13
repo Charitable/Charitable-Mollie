@@ -13,9 +13,9 @@
 namespace Charitable\Pro\Mollie\Gateway\Payment;
 
 use Charitable\Pro\Mollie\Gateway\Api;
-use Charitable\PaymentProcessors\Payment\RequestInterface;
-use Charitable\PaymentProcessors\Payment\ResponseInterface;
-use Charitable\PaymentProcessors\DonationDataMapper;
+use Charitable\Gateways\Payment\RequestInterface;
+use Charitable\Gateways\Payment\ResponseInterface;
+use Charitable\Helpers\DonationDataMapper;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {

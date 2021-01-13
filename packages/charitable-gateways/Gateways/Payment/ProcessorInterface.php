@@ -10,7 +10,7 @@
  * @version   1.7.0
  */
 
-namespace Charitable\PaymentProcessors\Payment;
+namespace Charitable\Gateways\Payment;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -29,7 +29,7 @@ interface ProcessorInterface {
 	 * @since  1.7.0
 	 *
 	 * @param  \Charitable_Donation $donation The donation to make a payment request for.
-	 * @return \Charitable\PaymentProcessors\Payment\RequestInterface
+	 * @return \Charitable\Gateways\Payment\RequestInterface
 	 */
 	public function get_payment_request( \Charitable_Donation $donation );
 }

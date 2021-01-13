@@ -12,7 +12,7 @@
 
 namespace Charitable\Pro\Mollie\Gateway\Payment;
 
-use Charitable\PaymentProcessors\Payment\ResponseInterface;
+use Charitable\Gateways\Payment\ResponseInterface;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {

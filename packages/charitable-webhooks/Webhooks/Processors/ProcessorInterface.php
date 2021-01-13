@@ -10,7 +10,7 @@
  * @version   version
  */
 
-namespace Charitable\WebhookReceivers\Processors;
+namespace Charitable\Webhooks\Processors;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {

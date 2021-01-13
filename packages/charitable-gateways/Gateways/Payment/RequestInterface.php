@@ -10,7 +10,7 @@
  * @version   1.7.0
  */
 
-namespace Charitable\PaymentProcessors\Payment;
+namespace Charitable\Gateways\Payment;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -28,9 +28,9 @@ interface RequestInterface {
 	 *
 	 * @since 1.7.0
 	 *
-	 * @param \Charitable\PaymentProcessors\DonationDataMapper $data The data mapper object.
+	 * @param \Charitable\Helpers\DonationDataMapper $data The data mapper object.
 	 */
-	public function __construct( \Charitable\PaymentProcessors\DonationDataMapper $data );
+	public function __construct( \Charitable\Helpers\DonationDataMapper $data );
 
 	/**
 	 * Prepare a request.

@@ -12,7 +12,7 @@
 
 namespace Charitable\Pro\Mollie\Gateway\Webhook;
 
-use Charitable\WebhookReceivers\Processors\DonationProcessor as BaseDonationProcessor;
+use Charitable\Webhooks\Processors\DonationProcessor as BaseDonationProcessor;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {

@@ -13,7 +13,7 @@
 namespace Charitable\Pro\Mollie\Gateway\Webhook;
 
 use Charitable\Pro\Mollie\Gateway\Api;
-use Charitable\WebhookReceivers\Interpreters\DonationInterpreterInterface;
+use Charitable\Webhooks\Interpreters\DonationInterpreterInterface;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
