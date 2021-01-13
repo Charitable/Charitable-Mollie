@@ -12,6 +12,8 @@
 
 namespace Charitable\Pro\Mollie\Gateway\Webhook;
 
+use Charitable\Webhooks\Processors\DonationProcessor as BaseDonationProcessor;
+
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -20,11 +22,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 
 	/**
-	 * \Charitable\Pro\Mollie\Gateway\Webhook\Processor
+	 * Donation webhook processor.
 	 *
 	 * @since 1.0.0
 	 */
-	class Processor extends \Charitable_Webhook_Processor_Donations {
+	class DonationProcessor extends BaseDonationProcessor {
 
 		/**
 		 * Process refunds.

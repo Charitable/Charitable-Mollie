@@ -12,30 +12,22 @@
 
 namespace Charitable\Pro\Mollie\Gateway\Webhook;
 
-use Charitable\Pro\Mollie\Gateway\Api as Api;
+use Charitable\Pro\Mollie\Gateway\Api;
+use Charitable\Webhooks\Interpreters\DonationInterpreterInterface;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
+if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter' ) ) :
 
 	/**
-	 * \Charitable\Pro\Mollie\Gateway\Webhook\Interpreter
+	 * Donation webhook interpreter.
 	 *
 	 * @since 1.0.0
 	 */
-	class Interpreter implements \Charitable_Webhook_Interpreter_Interface, \Charitable_Webhook_Interpreter_Donations_Interface {
-
-		/**
-		 * Valid webhook.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @var   boolean
-		 */
-		private $valid;
+	class DonationInterpreter implements DonationInterpreterInterface {
 
 		/**
 		 * The response message to send.
@@ -175,20 +167,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		}
 
 		/**
-		 * Return the interpreter object to use for donation webhooks.
-		 *
-		 * @since  1.0.0
-		 *
-		 * @return \Charitable\Pro\Mollie\Gateway\Webhook\Interpreter|false
-		 */
-		public function get_donations_interpreter() {
-			return $this;
-		}
-
-		/**
 		 * Get the donation object.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return Charitable_Donation|false Returns the donation if one matches the webhook.
 		 */
@@ -229,7 +210,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		/**
 		 * Get the type of event described by the webhook.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return string
 		 */
@@ -255,12 +236,12 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		/**
 		 * Get the refunded amount.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return float|false The amount to be refunded, or false if this is not a refund.
 		 */
 		public function get_refund_amount() {
-			if ( '0.00' === $this->payment->amountRefunded->value ) {
+			if ( ! isset( $this->payment->amountRefunded ) || '0.00' === $this->payment->amountRefunded->value ) {
 				return false;
 			}
 
@@ -270,7 +251,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		/**
 		 * Get a log message to include when adding the refund.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return string
 		 */
@@ -292,7 +273,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		/**
 		 * Return the gateway transaction ID.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return string|false The gateway transaction ID if available, otherwise false.
 		 */
@@ -303,7 +284,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		/**
 		 * Return the gateway transaction URL.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return string|false The URL if available, otherwise false.
 		 */
@@ -314,7 +295,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		/**
 		 * Return the donation status based on the webhook event.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return string
 		 */
@@ -339,7 +320,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		/**
 		 * Return an array of log messages to update the donation.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return array
 		 */
@@ -367,7 +348,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		/**
 		 * Return an array of meta data to add/update for the donation.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return array
 		 */
@@ -378,23 +359,23 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		/**
 		 * Get the response message.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return string
 		 */
 		public function get_response_message() {
-
+			return $this->response;
 		}
 
 		/**
 		 * Get the response HTTP status.
 		 *
-		 * @since  1.7.0
+		 * @since  1.0.0
 		 *
 		 * @return int
 		 */
 		public function get_response_status() {
-
+			return $this->status;
 		}
 
 		/**

@@ -2,7 +2,7 @@
 /**
  * The class responsible for creating payment requests for Mollie.
  *
- * @package   Charitable Mollie/Classes/\Charitable\Pro\Mollie\Gateway\Payment\Request
+ * @package   Charitable Mollie/Classes
  * @author    Eric Daams
  * @copyright Copyright (c) 2020, Studio 164a
  * @license   http://opensource.org/licenses/gpl-2.0.php GNU Public License
@@ -12,7 +12,10 @@
 
 namespace Charitable\Pro\Mollie\Gateway\Payment;
 
-use \Charitable\Pro\Mollie\Gateway\Api as Api;
+use Charitable\Pro\Mollie\Gateway\Api;
+use Charitable\Gateways\Payment\RequestInterface;
+use Charitable\Gateways\Payment\ResponseInterface;
+use Charitable\Helpers\DonationDataMapper;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -26,14 +29,14 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 	 *
 	 * @since 1.0.0
 	 */
-	class Request implements \Charitable_Gateway_Payment_Request_Interface {
+	class Request implements RequestInterface {
 
 		/**
 		 * Data map.
 		 *
 		 * @since 1.0.0
 		 *
-		 * @var   \Charitable_Donation_Data_Mapper
+		 * @var   DonationDataMapper
 		 */
 		private $data_map;
 
@@ -42,9 +45,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param \Charitable_Donation_Data_Mapper $data_map The data mapper object.
+		 * @param DonationDataMapper $data_map The data mapper object.
 		 */
-		public function __construct( \Charitable_Donation_Data_Mapper $data_map ) {
+		public function __construct( DonationDataMapper $data_map ) {
 			$this->data_map = $data_map;
 		}
 
@@ -127,7 +130,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		 *
 		 * @return \Charitable\Pro\Mollie\Gateway\Payment\Response
 		 */
-		public function get_response() {
+		public function get_response() : ResponseInterface {
 			return new Response( $this->response_data );
 		}
 	}

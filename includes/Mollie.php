@@ -13,8 +13,9 @@
 
 namespace Charitable\Pro\Mollie;
 
-use \Charitable\Pro\Mollie\Admin\Admin as Admin;
-use \Charitable\Pro\Mollie\Gateway\Gateway as Gateway;
+use Charitable\Pro\Mollie\Admin\Admin as Admin;
+use Charitable\Pro\Mollie\Gateway\Gateway as Gateway;
+use Charitable\Pro\Mollie\Gateway\Payment\Processor as PaymentProcessor;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {

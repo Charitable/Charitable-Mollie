@@ -63,6 +63,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Admin\Admin' ) ) :
 			 * Add a direct link to the Extensions settings page from the plugin row.
 			 */
 			add_filter( 'plugin_action_links_' . plugin_basename( \charitable_mollie()->get_path() ), array( $this, 'add_plugin_action_links' ) );
+
+			/* Include a link to the payment page in Mollie when displaying the transaction ID */
+			add_filter( 'charitable_donation_admin_meta', array( $this, 'add_link_to_mollie_payment_page' ), 10, 2 );
 		}
 
 		/**
@@ -92,6 +95,30 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Admin\Admin' ) ) :
 			}
 
 			return $links;
+		}
+
+		/**
+		 * Add a link to the Mollie payment page for a particular
+		 * donation if we have the URL.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @param  array                         $meta     The meta values to show in the Donation Details box.
+		 * @param  \Charitable_Abstract_Donation $donation The Donation object.
+		 * @return array
+		 */
+		public function add_link_to_mollie_payment_page( $meta, \Charitable_Abstract_Donation $donation ) {
+			if ( ! isset( $meta['gateway_transaction_id'] ) ) {
+				return $meta;
+			}
+
+			if ( ! $donation->_gateway_transaction_url ) {
+				return $meta;
+			}
+
+			$meta['gateway_transaction_id']['value'] = '<a href="' . $donation->_gateway_transaction_url . '" target="_blank">' . $donation->get_gateway_transaction_id() . '</a>';
+
+			return $meta;
 		}
 	}
 

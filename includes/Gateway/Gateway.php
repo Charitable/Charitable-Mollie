@@ -11,6 +11,9 @@
 
 namespace Charitable\Pro\Mollie\Gateway;
 
+use Charitable\Webhooks\Receivers as WebhookReceivers;
+use Charitable\Gateways\Payment\Processors as PaymentProcessors;
+
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -23,7 +26,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 	 *
 	 * @since 1.0.0
 	 */
-	class Gateway extends \Charitable_Gateway implements \Charitable_Gateway_Payment_Request_API_Interface {
+	class Gateway extends \Charitable_Gateway {
 
 		/** The gateway ID. */
 		const ID = 'mollie';
@@ -91,11 +94,19 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 			/* Register our new gateway. */
 			add_filter( 'charitable_payment_gateways', array( $this, 'register_gateway' ) );
 
-			/* Register our webhook interpreter. */
-			add_filter( 'charitable_webhook_interpreter_class_mollie', array( $this, 'get_webhook_interpreter_class' ) );
-
 			/* Refund a donation from the dashboard. */
 			add_action( 'charitable_process_refund_mollie', array( $this, 'refund_donation_from_dashboard' ) );
+
+			if ( version_compare( charitable()->get_version(), '1.7', '<' ) ) {
+				/* Register payment processor. */
+				$this->load_forward_compatible_packages();
+			}
+
+			/* Register the Mollie webhook receiver. */
+			WebhookReceivers::register( self::ID, '\Charitable\Pro\Mollie\Gateway\Webhook\Receiver' );
+
+			/* Register the Mollie payment processor */
+			PaymentProcessors::register( self::ID, '\Charitable\Pro\Mollie\Gateway\Payment\Processor' );
 		}
 
 		/**
@@ -153,17 +164,6 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 		public function register_gateway( $gateways ) {
 			$gateways['mollie'] = '\Charitable\Pro\Mollie\Gateway\Gateway';
 			return $gateways;
-		}
-
-		/**
-		 * Get the webhook interpreter class name.
-		 *
-		 * @since  1.0.0
-		 *
-		 * @return string
-		 */
-		public function get_webhook_interpreter_class() {
-			return '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter';
 		}
 
 		/**
@@ -255,6 +255,35 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 
 			return new Payment\Request( $data_map );
 		}
+
+		/**
+		 * Process a Mollie webhook.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return void
+		 */
+		public function process_webhook() {
+			/* Stop infinite recursion. */
+			remove_action( 'charitable_process_ipn_' . self::ID, array( $this, 'process_webhook' ) );
+			\Charitable\Packages\Webhooks\handle( self::ID );
+		}
+
+		/**
+		 * Load the gateways & webhooks packages for forward compatibility.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return void
+		 */
+		private function load_forward_compatible_packages() {
+			require_once \charitable_mollie()->get_path( 'directory' ) . 'packages/charitable-gateways/package.php';
+			require_once \charitable_mollie()->get_path( 'directory' ) . 'packages/charitable-webhooks/package.php';
+
+			add_filter( 'charitable_process_donation_' . self::ID, '\Charitable\Packages\Gateways\process_donation', 10, 3 );
+			add_action( 'charitable_process_ipn_' . self::ID, array( $this, 'process_webhook' ) );
+		}
 	}
+
 
 endif;

@@ -12,6 +12,8 @@
 
 namespace Charitable\Pro\Mollie\Gateway\Payment;
 
+use Charitable\Gateways\Payment\ResponseInterface;
+
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -20,11 +22,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Response' ) ) :
 
 	/**
-	 * \Charitable\Pro\Mollie\Gateway\Payment\Response
+	 * Response object after making payment request.
 	 *
 	 * @since 1.0.0
 	 */
-	class Response implements \Charitable_Gateway_Payment_Response_Interface {
+	class Response implements ResponseInterface {
 
 		/**
 		 * The response data.
