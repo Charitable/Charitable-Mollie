@@ -251,7 +251,8 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Mollie' ) ) :
 
 			switch ( $type ) {
 				case 'includes':
-					$path = $base . 'includes/';
+				case 'src':
+					$path = $base . 'src/';
 					break;
 
 				case 'functions':

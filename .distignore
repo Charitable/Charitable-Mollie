@@ -1,0 +1,16 @@
+.*
+.*/
+*.lock
+*.md
+*.zip
+/bin/
+/build/
+/node_modules/
+/tests/
+Gruntfile.js
+package-lock.json
+package.json
+phpcs.xml
+phpunit.xml
+phpunit.xml.dist
+README.md
