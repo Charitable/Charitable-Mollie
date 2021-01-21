@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * DonationProcessor.
+ * Donation Processor.
  *
  * @since 1.7.0
  */

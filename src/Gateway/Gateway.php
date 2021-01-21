@@ -72,6 +72,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 			$this->supports = array(
 				'1.3.0',
 				'refunds',
+				'recurring',
 			);
 
 			$this->setup();

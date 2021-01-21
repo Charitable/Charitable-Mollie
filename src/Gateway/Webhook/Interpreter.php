@@ -14,20 +14,21 @@ namespace Charitable\Pro\Mollie\Gateway\Webhook;
 
 use Charitable\Pro\Mollie\Gateway\Api;
 use Charitable\Webhooks\Interpreters\DonationInterpreterInterface;
+use Charitable\Webhooks\Interpreters\SubscriptionInterpreterInterface;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter' ) ) :
+if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 
 	/**
-	 * Donation webhook interpreter.
+	 * Webhook interpreter.
 	 *
 	 * @since 1.0.0
 	 */
-	class DonationInterpreter implements DonationInterpreterInterface {
+	class Interpreter implements DonationInterpreterInterface, SubscriptionInterpreterInterface {
 
 		/**
 		 * The response message to send.
@@ -128,17 +129,6 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		}
 
 		/**
-		 * Check whether there is a processor to use for the webhook source.
-		 *
-		 * @since  1.0.0
-		 *
-		 * @return boolean
-		 */
-		public function has_processor() {
-			return true;
-		}
-
-		/**
 		 * Get the processor to use for the webhook source.
 		 *
 		 * @since  1.0.0
@@ -159,11 +149,11 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 * @return string
 		 */
 		public function get_event_subject() {
-			if ( isset( $this->payment->subscriptionId ) ) {
-				return 'subscription';
+			if ( 'oneoff' === $this->payment->sequenceType ) {
+				return 'donation';
 			}
 
-			return 'donation';
+			return 'subscription';
 		}
 
 		/**
@@ -175,6 +165,10 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 */
 		public function get_donation() {
 			if ( ! isset( $this->donation ) ) {
+				if ( is_null( $this->donation_id ) ) {
+					return false;
+				}
+
 				/* The donation ID needs to match a donation post type. */
 				if ( \Charitable::DONATION_POST_TYPE !== get_post_type( $this->donation_id ) ) {
 					return false;
@@ -200,7 +194,8 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 */
 		public function get_payment() {
 			if ( ! isset( $this->payment ) ) {
-				$api           = new Api( $this->donation->get( 'test_mode' ) );
+				$test_mode     = is_null( $this->donation_id ) ? charitable_get_option( 'test_mode' ) : $this->get_donation()->get_test_mode( false );
+				$api           = new Api( $test_mode );
 				$this->payment = $api->get( 'payments/' . $this->data['id'] . '?embed=refunds' );
 			}
 
@@ -229,8 +224,45 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 					return 'failed_payment';
 
 				case 'paid':
-					return 'completed_payment';
+					if ( 'subscription' !== $this->get_event_subject() ) {
+						return 'completed_payment';
+					}
+
+					return $this->is_first_payment() ? 'first_payment' : 'renewal';
 			}
+		}
+
+		/**
+		 * Checks whether the payment has a mandate.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return boolean
+		 */
+		public function has_mandate() {
+			return isset( $this->get_payment()->mandateId );
+		}
+
+		/**
+		 * Checks whether the payment is a renewal of a subscription.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return boolean
+		 */
+		public function is_renewal() {
+			return 'recurring' === $this->get_payment()->sequenceType;
+		}
+
+		/**
+		 * Checks whether the payment is the first for a subscription.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return boolean
+		 */
+		public function is_first_payment() {
+			return 'first' === $this->get_payment()->sequenceType;
 		}
 
 		/**
@@ -241,11 +273,11 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 * @return float|false The amount to be refunded, or false if this is not a refund.
 		 */
 		public function get_refund_amount() {
-			if ( ! isset( $this->payment->amountRefunded ) || '0.00' === $this->payment->amountRefunded->value ) {
+			if ( ! isset( $this->get_payment()->amountRefunded ) || '0.00' === $this->get_payment()->amountRefunded->value ) {
 				return false;
 			}
 
-			return end( $this->payment->_embedded->refunds )->amount->value;
+			return end( $this->get_payment()->_embedded->refunds )->amount->value;
 		}
 
 		/**
@@ -256,7 +288,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 * @return string
 		 */
 		public function get_refund_log_message() {
-			return end( $this->payment->_embedded->refunds )->description;
+			return end( $this->get_payment()->_embedded->refunds )->description;
 		}
 
 		/**
@@ -267,7 +299,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 * @return array
 		 */
 		public function get_refunds() {
-			return $this->payment->_embedded->refunds;
+			return $this->get_payment()->_embedded->refunds;
 		}
 
 		/**
@@ -278,7 +310,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 * @return string|false The gateway transaction ID if available, otherwise false.
 		 */
 		public function get_gateway_transaction_id() {
-			return $this->payment->id;
+			return $this->get_payment()->id;
 		}
 
 		/**
@@ -289,7 +321,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 * @return string|false The URL if available, otherwise false.
 		 */
 		public function get_gateway_transaction_url() {
-			return $this->payment->_links->dashboard->href;
+			return $this->get_payment()->_links->dashboard->href;
 		}
 
 		/**
@@ -300,7 +332,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 * @return string
 		 */
 		public function get_donation_status() {
-			switch ( $this->payment->status ) {
+			switch ( $this->get_payment()->status ) {
 				case 'open':
 				case 'pending':
 					return 'charitable-pending';
@@ -327,14 +359,14 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		public function get_logs() {
 			$logs = array();
 
-			switch ( $this->payment->status ) {
+			switch ( $this->get_payment()->status ) {
 				case 'expired':
 					$logs[] = __( 'Payment expired.', 'charitable-mollie' );
 					break;
 			}
 
 			/* Log refund notes. */
-			if ( $this->get_refund_amount() && $this->payment->description !== $this->get_refund_log_message() ) {
+			if ( $this->get_refund_amount() && $this->get_payment()->description !== $this->get_refund_log_message() ) {
 				$logs[] = sprintf(
 					/* translators: %s: refund note */
 					__( 'Refund note: "%s"', 'charitable-mollie' ),
@@ -343,6 +375,58 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 			}
 
 			return $logs;
+		}
+
+		/**
+		 * Get the Recurring Donation object.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return Charitable_Recurring_Donation|false Returns the Recurring Donation if one matches the webhook.
+		 *                                             If not, returns false.
+		 */
+		public function get_recurring_donation() {
+			if ( $this->is_renewal() ) {
+				$this->recurring_donation = charitable_recurring_get_subscription_by_gateway_id( $this->get_gateway_subscription_id(), 'mollie' );
+			} else {
+				$this->donation           = $this->get_donation();
+				$this->recurring_donation = $this->donation->get_donation_plan();
+			}
+
+			return $this->recurring_donation;
+		}
+
+		/**
+		 * Get the subscription ID used in the payment gateway.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return mixed|false
+		 */
+		public function get_gateway_subscription_id() {
+			return $this->get_payment()->subscriptionId ?? false;
+		}
+
+		/**
+		 * Get the URL to access the subscription in the gateway's dashboard.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return mixed|false
+		 */
+		public function get_gateway_subscription_url() {
+			return '';
+		}
+
+		/**
+		 * Return the Subscription status based on the webhook event.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return string
+		 */
+		public function get_subscription_status() {
+
 		}
 
 		/**
@@ -386,11 +470,6 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 		 * @return void
 		 */
 		private function parse_request() {
-			if ( ! $this->is_valid_request() ) {
-				$this->set_invalid_request( __( 'Invalid request', 'charitable-mollie' ) );
-				return;
-			}
-
 			$payload = file_get_contents( 'php://input' );
 
 			if ( empty( $payload ) ) {
@@ -409,14 +488,8 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 				return;
 			}
 
-			/* See if we have a donation stored with this transaction ID. */
+			/* Try to find the donation ID based on the transaction ID passed. */
 			$this->donation_id = charitable_get_donation_by_transaction_id( $this->data['id'] );
-
-			/* Check that the donation is valid. */
-			if ( is_null( $this->donation_id ) || ! $this->get_donation() ) {
-				$this->set_invalid_request( __( 'No such donation here.', 'charitable-mollie' ) );
-				return;
-			}
 
 			/* Get the payment from Mollie. */
 			if ( ! $this->get_payment() ) {
@@ -424,19 +497,16 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\DonationInterpreter
 				return;
 			}
 
+			if ( ! $this->is_renewal() ) {
+				/* Confirmk that the donation is valid. */
+				if ( is_null( $this->donation_id ) || ! $this->get_donation() ) {
+					$this->set_invalid_request( __( 'No such donation here.', 'charitable-mollie' ) );
+					return;
+				}
+			}
+
 			/* We're still here. Webhook is valid. */
 			$this->valid = true;
-		}
-
-		/**
-		 * Returns whether the webhook request is valid.
-		 *
-		 * @since  1.0.0
-		 *
-		 * @return boolean
-		 */
-		private function is_valid_request() {
-			return ! isset( $_SERVER['REQUEST_METHOD'] ) || 'POST' === $_SERVER['REQUEST_METHOD'];
 		}
 
 		/**

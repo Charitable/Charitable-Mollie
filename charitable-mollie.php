@@ -19,7 +19,7 @@
 
 namespace Charitable\Pro\Mollie;
 
-use \Charitable\Extensions\Activation\Activation;
+use Charitable\Extensions\Activation\Activation;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -40,7 +40,7 @@ add_action(
 		$activation = new Activation( '1.6.45' );
 
 		if ( $activation->ok() ) {
-			spl_autoload_register( 'autoloader' );
+			spl_autoload_register( '\Charitable\Pro\Mollie\autoloader' );
 
 			return new Mollie( __FILE__ );
 		}

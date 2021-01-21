@@ -1,8 +1,11 @@
 <?php
 /**
- * Interpret incoming Mollie webhooks.
+ * Receiver for incoming Mollie webhooks.
  *
- * @package   Charitable Mollie/Classes/\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter
+ * The responsibility of this class is to ensure the webhook is valid,
+ * and then return a webhook processor with an appropriate interpreter.
+ *
+ * @package   Charitable Mollie/Classes
  * @author    Eric Daams
  * @copyright Copyright (c) 2021, Studio 164a
  * @license   http://opensource.org/licenses/gpl-2.0.php GNU Public License
@@ -37,18 +40,24 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Receiver' ) ) :
 		 * @return Processor
 		 */
 		public function get_processor() {
-			return new DonationProcessor( $this->get_interpreter() );
+			$interpreter = $this->get_interpreter();
+
+			if ( 'subscription' === $interpreter->get_event_subject() ) {
+				return new SubscriptionProcessor( $interpreter );
+			}
+
+			return new DonationProcessor( $interpreter );
 		}
 
 		/**
-		 * Return the DonationIntepreter object to use for donation webhooks.
+		 * Return the Intepreter object to use for donation webhooks.
 		 *
 		 * @since  1.0.0
 		 *
-		 * @return DonationInterpreter
+		 * @return Interpreter
 		 */
 		public function get_interpreter() {
-			return new DonationInterpreter();
+			return new Interpreter();
 		}
 
 		/**

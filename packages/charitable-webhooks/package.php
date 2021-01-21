@@ -30,9 +30,11 @@ define( 'CHARITABLE_WEBHOOKS_PACKAGE_LOADED', true );
  * Load all files in the package.
  */
 require_once 'Webhooks/Interpreters/DonationInterpreterInterface.php';
+require_once 'Webhooks/Interpreters/SubscriptionInterpreterInterface.php';
 require_once 'Webhooks/Processors/ProcessorInterface.php';
 require_once 'Webhooks/Processors/Processor.php';
 require_once 'Webhooks/Processors/DonationProcessor.php';
+require_once 'Webhooks/Processors/SubscriptionProcessor.php';
 require_once 'Webhooks/Receivers/ReceiverInterface.php';
 require_once 'Webhooks/Receivers.php';
 
@@ -100,6 +102,24 @@ function set_gateway_transaction_url( $url, $donation ) {
 	}
 
 	$key = '_gateway_transaction_url';
+	$url = charitable_sanitize_donation_meta( $url, $key );
+	return update_post_meta( $donation->ID, $key, $url );
+}
+
+/**
+ * Save the gateway's subscription URL.
+ *
+ * @since  1.7.0
+ *
+ * @param  string|false $url The URL of the subscription in the gateway account.
+ * @return boolean
+ */
+function set_gateway_subscription_url( $url, $donation ) {
+	if ( ! $url ) {
+		return false;
+	}
+
+	$key = '_gateway_subscription_url';
 	$url = charitable_sanitize_donation_meta( $url, $key );
 	return update_post_meta( $donation->ID, $key, $url );
 }

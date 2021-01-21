@@ -41,14 +41,25 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		private $data_map;
 
 		/**
+		 * Whether this is a test mode request.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @var   boolean
+		 */
+		private $test_mode;
+
+		/**
 		 * Class instantiation.
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param DonationDataMapper $data_map The data mapper object.
+		 * @param DonationDataMapper $data_map  The data mapper object.
+		 * @param boolean|null       $test_mode Whether this is a test mode request.
 		 */
-		public function __construct( DonationDataMapper $data_map ) {
+		public function __construct( DonationDataMapper $data_map, $test_mode = null ) {
 			$this->data_map = $data_map;
+			$this->test_mode = is_null( $test_mode ) ? charitable_get_option( 'test_mode' ) : $test_mode;
 		}
 
 		/**
@@ -68,7 +79,11 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		 * @return boolean
 		 */
 		public function prepare_request() {
-			$customer_id = $this->create_customer();
+			$customer_id = $this->get_customer_id();
+
+			if ( ! $customer_id ) {
+				$customer_id = $this->create_customer();
+			}
 
 			$this->request_data                    = $this->data_map->get_data( array( 'amount', 'description', 'redirectUrl', 'webhookUrl', 'locale', 'metadata' ) );
 			$this->request_data['amount']['value'] = number_format( $this->request_data['amount']['value'], 2 );
@@ -105,6 +120,46 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		}
 
 		/**
+		 * Returns the Mollie customer id for the current donor.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @param  boolean|null $test_mode Whether to get test mode keys. If null, this
+		 *                                 will use the current site Test Mode setting.
+		 * @return string|false Returns a string if a customer id is set. Otherwise returns false.
+		 */
+		public function get_customer_id() {
+			if ( ! is_user_logged_in() ) {
+				return false;
+			}
+
+			$donor_id = charitable_get_user( get_current_user_id() )->get_donor_id();
+
+			if ( ! $donor_id ) {
+				return false;
+			}
+
+			$customer_id = get_metadata( 'donor', $donor_id, $this->get_customer_meta_key(), true );
+
+			if ( ! $customer_id ) {
+				return false;
+			}
+
+			try {
+				$customer = $this->api()->get( 'customers/' . $customer_id );
+				/**
+				 * GET: https://api.mollie.com/v2/customers/
+				 *
+				 * @see https://docs.mollie.com/reference/v2/customers-api/get-customer
+				 */
+				return $customer->id;
+
+			} catch ( \Exception $e ) {
+
+			}
+		}
+
+		/**
 		 * Make the request.
 		 *
 		 * @return boolean
@@ -132,6 +187,18 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		 */
 		public function get_response() : ResponseInterface {
 			return new Response( $this->response_data );
+		}
+
+		/**
+		 * Get the meta key used to record the Mollie customer ID.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return string
+		 */
+		public function get_customer_meta_key() {
+			$meta_postfix = $this->test_mode ? 'test' : 'live';
+			return 'mollie_customer_id_' . $meta_postfix;
 		}
 	}
 

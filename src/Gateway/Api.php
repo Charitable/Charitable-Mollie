@@ -163,46 +163,24 @@ class Api {
 	/**
 	 * Performs the underlying HTTP request. Not very exciting.
 	 *
-	 * @since   1.0.0
+	 * @uses  wp_remote_request
+	 *
+	 * @since  1.0.0
 	 *
 	 * @param  string  $http_verb The HTTP verb to use: get, post, put, patch, delete.
 	 * @param  string  $method    The API method to be called.
 	 * @param  mixed[] $args      Associative array of parameters to be passed as the body of the request.
-	 * @return false|mixed[] Associative array of decoded result. False if there was an error.
+	 * @return false|array Associative array of decoded result. False if there was an error.
 	 */
 	public function make_request( $http_verb, $method, $args = array(), $timeout = 10 ) {
 		if ( ! $this->has_valid_api_key() ) {
 			return false;
 		}
 
-		$http_verb = strtoupper( $http_verb );
-		$url       = $this->api_endpoint . '/' . $method;
-		$body      = empty( $args ) ? '' : json_encode( $args );
+		$request_args = $this->prepare_request_args( $http_verb, $args, $timeout );
+		$url          = $this->api_endpoint . '/' . $method;
 
-		$request_args = array(
-			'method'      => $http_verb,
-			'timeout'     => $timeout,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'user-agent'  => 'Charitable Mollie/' . Mollie::VERSION . '; ' . home_url(),
-			'body'        => $body,
-			'headers'     => array(
-				'content-type'  => 'application/json',
-				'authorization' => 'Bearer ' . $this->api_key,
-			),
-		);
-
-		switch ( $http_verb ) {
-			case 'GET':
-				$this->last_response = wp_remote_get( $url, $request_args );
-				break;
-			case 'POST':
-				$this->last_response = wp_remote_post( $url, $request_args );
-				break;
-			default:
-				$this->last_response = wp_remote_request( $url, $request_args );
-		}
+		$this->last_response = wp_remote_request( $url, $request_args );
 
 		if ( defined( 'CHARITABLE_DEBUG' ) && CHARITABLE_DEBUG ) {
 			error_log( var_export( $this->last_response, true ) );
@@ -228,11 +206,41 @@ class Api {
 	}
 
 	/**
-	 * Return the response to the most recent request.
+	 * Prepare the arguments to send to a request.
 	 *
 	 * @since  1.0.0
 	 *
-	 * @return WP_Error|?
+	 * @param  string  $http_verb The HTTP verb to use: get, post, put, patch, delete.
+	 * @param  string  $method    The API method to be called.
+	 * @param  mixed[] $args      Associative array of parameters to be passed as the body of the request.
+	 * @return array
+	 */
+	public function prepare_request_args( $http_verb, $args = array(), $timeout = 10 ) {
+		$body = empty( $args ) ? '' : json_encode( $args );
+
+		return array(
+			'method'      => strtoupper( $http_verb ),
+			'timeout'     => $timeout,
+			'redirection' => 5,
+			'httpversion' => '1.0',
+			'blocking'    => true,
+			'user-agent'  => 'Charitable Mollie/' . Mollie::VERSION . '; ' . home_url(),
+			'body'        => $body,
+			'headers'     => array(
+				'content-type'  => 'application/json',
+				'authorization' => 'Bearer ' . $this->api_key,
+			),
+		);
+	}
+
+	/**
+	 * Return the response to the most recent request.
+	 *
+	 * @see    wp_remote_request
+	 *
+	 * @since  1.0.0
+	 *
+	 * @return WP_Error|array
 	 */
 	public function get_last_response() {
 		return $this->last_response;
