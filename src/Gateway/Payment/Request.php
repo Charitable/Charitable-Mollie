@@ -50,6 +50,15 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		private $test_mode;
 
 		/**
+		 * The current user's donor ID.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @var   int|false
+		 */
+		private $donor_id;
+
+		/**
 		 * Class instantiation.
 		 *
 		 * @since 1.0.0
@@ -112,6 +121,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 				 *
 				 * @see https://docs.mollie.com/reference/v2/customers-api/create-customer
 				 */
+
+				update_metadata( 'donor', $this->get_donor_id(), $this->get_customer_meta_key(), $customer->id );
+
 				return $customer->id;
 
 			} catch ( \Exception $e ) {
@@ -129,11 +141,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		 * @return string|false Returns a string if a customer id is set. Otherwise returns false.
 		 */
 		public function get_customer_id() {
-			if ( ! is_user_logged_in() ) {
-				return false;
-			}
-
-			$donor_id = charitable_get_user( get_current_user_id() )->get_donor_id();
+			$donor_id = $this->get_donor_id();
 
 			if ( ! $donor_id ) {
 				return false;
@@ -199,6 +207,25 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		public function get_customer_meta_key() {
 			$meta_postfix = $this->test_mode ? 'test' : 'live';
 			return 'mollie_customer_id_' . $meta_postfix;
+		}
+
+		/**
+		 * Get the current customer's donor ID.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return int|false
+		 */
+		public function get_donor_id() {
+			if ( ! isset( $this->donor_id ) ) {
+				if ( ! is_user_logged_in() ) {
+					$this->donor_id =  false;
+				}
+
+				$this->donor_id = charitable_get_user( get_current_user_id() )->get_donor_id();
+			}
+
+			return $this->donor_id;
 		}
 	}
 
