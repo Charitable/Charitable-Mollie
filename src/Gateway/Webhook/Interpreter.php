@@ -487,6 +487,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 			parse_str( $payload, $this->data );
 
 			if ( defined( 'CHARITABLE_DEBUG' ) && CHARITABLE_DEBUG ) {
+				error_log( __METHOD__ );
 				error_log( var_export( $this->data, true ) );
 			}
 

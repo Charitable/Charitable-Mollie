@@ -61,6 +61,17 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 				$subscription_args['length'] = $this->recurring_donation->get_donation_length();
 			}
 
+			/**
+			 * Filter the arguments used to add a new subscription.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param array                         $subscription_args  The arguments made to create the subscription.
+			 * @param Charitable_Recurring_Donation $recurring_donation The recurring donation object.
+			 * @param object                        $payment            The first payment object received from Mollie.
+			 */
+			$subscription_args = apply_filters( 'charitable_mollie_subscription_args', $subscription_args, $this->recurring_donation, $payment );
+
 			$api                = new Api( $this->donation->get( 'test_mode' ) );
 			$this->subscription = $api->post( 'customers/' . $payment->customerId . '/subscriptions', $subscription_args );
 

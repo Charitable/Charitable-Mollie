@@ -183,6 +183,7 @@ class Api {
 		$this->last_response = wp_remote_request( $url, $request_args );
 
 		if ( defined( 'CHARITABLE_DEBUG' ) && CHARITABLE_DEBUG ) {
+			error_log( __METHOD__ );
 			error_log( var_export( $this->last_response, true ) );
 		}
 

@@ -114,13 +114,20 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		public function create_customer() {
 			$customer_data = $this->data_map->get_data( array( 'name', 'email', 'locale' ) );
 
+			/**
+			 * Filter the arguments used to add a new Customer in Mollie.
+			 *
+			 * @see https://docs.mollie.com/reference/v2/customers-api/create-customer
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param array $customer_data The arguments to be passed to create the customer.
+			 * @param array $data          Additional data received for the request.
+			 */
+			$customer_data = apply_filters( 'charitable_mollie_customer_args', $customer_data, $this->data_map );
+
 			try {
 				$customer = $this->api()->post( 'customers', $customer_data );
-				/**
-				 * POST: https://api.mollie.com/v2/customers
-				 *
-				 * @see https://docs.mollie.com/reference/v2/customers-api/create-customer
-				 */
 
 				update_metadata( 'donor', $this->get_donor_id(), $this->get_customer_meta_key(), $customer->id );
 
@@ -155,13 +162,8 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 
 			try {
 				$customer = $this->api()->get( 'customers/' . $customer_id );
-				/**
-				 * GET: https://api.mollie.com/v2/customers/
-				 *
-				 * @see https://docs.mollie.com/reference/v2/customers-api/get-customer
-				 */
-				return $customer->id;
 
+				return $customer->id;
 			} catch ( \Exception $e ) {
 
 			}
@@ -173,16 +175,22 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		 * @return boolean
 		 */
 		public function make_request() {
+			/**
+			 * Filter the arguments used to add a new Payment in Mollie.
+			 *
+			 * @see https://docs.mollie.com/reference/v2/payments-api/create-payment
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param array $request_data The arguments to be passed to create the payment.
+			 * @param array $data         Additional data received for the request.
+			 */
+			$this->request_data = apply_filters( 'charitable_mollie_payment_args', $this->request_data, $this->data_map );
+
 			try {
-				/**
-				 * POST: https://api.mollie.com/v2/payments
-				 *
-				 * @see https://docs.mollie.com/reference/v2/payments-api/create-payment
-				 */
 				$this->response_data = $this->api()->post( 'payments', $this->request_data );
 
 				return true;
-
 			} catch ( Exception $e ) {
 
 			}
