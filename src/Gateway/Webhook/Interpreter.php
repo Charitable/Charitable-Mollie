@@ -437,7 +437,14 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Interpreter' ) ) :
 		 * @return array
 		 */
 		public function get_meta() {
-			return array();
+			$meta = array();
+
+			if ( $this->is_renewal() ) {
+				$meta['_gateway_transaction_id']  = $this->get_gateway_transaction_id();
+				$meta['_gateway_transaction_url'] = $this->get_gateway_transaction_url();
+			}
+
+			return $meta;
 		}
 
 		/**

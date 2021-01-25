@@ -99,7 +99,7 @@ class SubscriptionProcessor extends DonationProcessor {
 		$this->donation = $this->interpreter->get_donation();
 
 		/* If this isn't a renewal and there is no donation, there's nothing left to do. */
-		if ( ! $this->donation && ! $this->is_renewal() ) {
+		if ( ! $this->donation && ! $this->interpreter->is_renewal() ) {
 			$this->set_response(
 				__( 'Subscription Webhook: Event could not be matched to a valid Charitable donation.', 'charitable' )
 			);
@@ -138,7 +138,7 @@ class SubscriptionProcessor extends DonationProcessor {
 			)
 		);
 
-		$donation = charitable_get_donation( $donation_id );
+		$this->donation = charitable_get_donation( $donation_id );
 
 		$this->save_gateway_subscription_data();
 		$this->update_meta();

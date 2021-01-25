@@ -61,8 +61,8 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 				$subscription_args['length'] = $this->recurring_donation->get_donation_length();
 			}
 
-			$api          = new Api( $this->donation->get( 'test_mode' ) );
-			$subscription = $api->post( 'customers/' . $payment->customerId . '/subscriptions', $subscription_args );
+			$api                = new Api( $this->donation->get( 'test_mode' ) );
+			$this->subscription = $api->post( 'customers/' . $payment->customerId . '/subscriptions', $subscription_args );
 
 			/* Activate the subscription. */
 			$this->recurring_donation->renew();
@@ -74,6 +74,19 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 			$this->set_response( __( 'Subscription Webhook: First payment processed', 'charitable' ) );
 
 			return true;
+		}
+
+		/**
+		 * Save the gateway subscription ID and URL if available.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return void
+		 */
+		public function save_gateway_subscription_data() {
+			$subscription_id = isset( $this->subscription ) ? $this->subscription->id : $this->interpreter->get_gateway_subscription_id();
+
+			$this->recurring_donation->set_gateway_subscription_id( $subscription_id );
 		}
 
 		/**
