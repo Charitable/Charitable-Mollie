@@ -47,10 +47,10 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 			$subscription_args = array(
 				'amount'      => array(
 					'currency' => charitable_get_currency(),
-					'value'    => number_format( $this->donation->get_total_donation_amount( true ), 2 ),
+					'value'    => $this->get_subscription_amount(),
 				),
 				'interval'    => $this->get_subscription_interval(),
-				'description' => $this->recurring_donation->get_campaigns_donated_to(),
+				'description' => $this->get_subscription_description(),
 				'mandateId'   => $payment->mandateId,
 				'metadata'    => array(
 					'recurring_donation_id' => $this->recurring_donation->ID,
@@ -105,6 +105,32 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 			}
 		}
 
+		/**
+		 * Get the amount for the recurring donation.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return string
+		 */
+		public function get_subscription_amount() {
+			return number_format( $this->donation->get_total_donation_amount( true ), 2 );
+		}
+
+		/**
+		 * Get a description for a recurring donation.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return string
+		 */
+		public function get_subscription_description() {
+			return sprintf(
+				/* translators: %1$s: name of campaign; %2$d: recurring donation ID */
+				__( '%1$s - Recurring Donation #%2$d', 'charitable-mollie' ),
+				$this->recurring_donation->get_campaigns_donated_to(),
+				$this->recurring_donation->ID
+			);
+		}
 	}
 
 endif;

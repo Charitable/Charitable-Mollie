@@ -165,7 +165,6 @@ class SubscriptionProcessor extends DonationProcessor {
 	 * @return boolean
 	 */
 	public function process_first_payment() {
-		error_log( var_export( __METHOD__, true ) );
 		/* Update the initial payment and mark it as complete. */
 		$this->process_completed_payment();
 
