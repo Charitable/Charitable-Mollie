@@ -95,7 +95,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 			}
 
 			$this->request_data                    = $this->data_map->get_data( array( 'amount', 'description', 'redirectUrl', 'webhookUrl', 'locale', 'metadata' ) );
-			$this->request_data['amount']['value'] = number_format( $this->request_data['amount']['value'], 2 );
+			$this->request_data['amount']['value'] = $this->get_payment_amount();
 			$this->request_data['customerId']      = $customer_id;
 			$this->request_data['sequenceType']    = 0 === $this->data_map->donation_plan_id ? 'oneoff' : 'first';
 
@@ -234,6 +234,23 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 			}
 
 			return $this->donor_id;
+		}
+
+		/**
+		 * Get the payment amount, taking into account any fees included.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return string
+		 */
+		public function get_payment_amount() {
+			$amount = $this->request_data['amount'];
+
+			if ( $this->data_map->cover_fees ) {
+				$amount = $this->data_map->total_donation_with_fees;
+			}
+
+			return number_format( $amount, 2 );
 		}
 	}
 

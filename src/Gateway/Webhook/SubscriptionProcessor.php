@@ -137,6 +137,11 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 		 * @return string
 		 */
 		public function get_subscription_amount() {
+			/* Handles support for Fee Relief. */
+			if ( $this->donation->get( 'cover_fees' ) ) {
+				return number_format( $this->donation->get( 'total_donation_with_fees' ), 2 );
+			}
+
 			return number_format( $this->donation->get_total_donation_amount( true ), 2 );
 		}
 
