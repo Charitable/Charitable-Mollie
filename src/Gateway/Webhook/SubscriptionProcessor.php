@@ -52,6 +52,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 				'interval'    => $this->get_subscription_interval(),
 				'description' => $this->get_subscription_description(),
 				'mandateId'   => $payment->mandateId,
+				'webhookUrl'  => charitable_get_ipn_url( 'mollie' ),
 				'metadata'    => array(
 					'recurring_donation_id' => $this->recurring_donation->ID,
 				),
