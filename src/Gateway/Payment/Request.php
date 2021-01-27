@@ -186,13 +186,27 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 			 * @param array $data         Additional data received for the request.
 			 */
 			$this->request_data = apply_filters( 'charitable_mollie_payment_args', $this->request_data, $this->data_map );
+			error_log( var_export( $this->request_data, true ) );
 
 			try {
 				$this->response_data = $this->api()->post( 'payments', $this->request_data );
 
+				if ( false === $this->response_data ) {
+					$response = json_decode( wp_remote_retrieve_body( $this->api()->get_last_response() ) );
+
+					charitable_get_notices()->add_error(
+						sprintf(
+							/* translators: %s: error message from Mollie */
+							__( 'Payment request failed with error: %s.', 'charitable-mollie' ),
+							json_decode( wp_remote_retrieve_body( $this->api()->get_last_response() ) )->detail
+						)
+					);
+					return false;
+				}
+
 				return true;
 			} catch ( Exception $e ) {
-
+				return false;
 			}
 		}
 
@@ -244,7 +258,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		 * @return string
 		 */
 		public function get_payment_amount() {
-			$amount = $this->request_data['amount'];
+			$amount = $this->data_map->get_amount();
 
 			if ( $this->data_map->cover_fees ) {
 				$amount = $this->data_map->total_donation_with_fees;

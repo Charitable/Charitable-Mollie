@@ -52,9 +52,7 @@ function process_donation( $response, $donation_id, \Charitable_Donation_Process
 	$donation = new \Charitable_Donation( $donation_id );
 	$request  = $processor->get_payment_request( $donation );
 
-	if ( $request->prepare_request() ) {
-		$request->make_request();
-
+	if ( $request->prepare_request() && $request->make_request() ) {
 		$response = $request->get_response();
 
 		/* Save the gateway transaction ID */

@@ -51,6 +51,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 				),
 				'interval'    => $this->get_subscription_interval(),
 				'description' => $this->get_subscription_description(),
+				'startDate'   => charitable_recurring_calculate_future_date( 1, $this->recurring_donation->get_donation_period(), 'now', 'Y-m-d' ),
 				'mandateId'   => $payment->mandateId,
 				'webhookUrl'  => charitable_get_ipn_url( 'mollie' ),
 				'metadata'    => array(
@@ -59,7 +60,8 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 			);
 
 			if ( ! empty( $this->recurring_donation->get_donation_length() ) ) {
-				$subscription_args['length'] = $this->recurring_donation->get_donation_length();
+				/* Subtract one from the donation length because the first payment has already been made. */
+				$subscription_args['times'] = $this->recurring_donation->get_donation_length() - 1;
 			}
 
 			/**
@@ -72,6 +74,8 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 			 * @param object                        $payment            The first payment object received from Mollie.
 			 */
 			$subscription_args = apply_filters( 'charitable_mollie_subscription_args', $subscription_args, $this->recurring_donation, $payment );
+
+			error_log( var_export( $subscription_args, true ) );
 
 			$api                = new Api( $this->donation->get( 'test_mode' ) );
 			$this->subscription = $api->post( 'customers/' . $payment->customerId . '/subscriptions', $subscription_args );
