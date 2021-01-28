@@ -2,7 +2,11 @@
 /**
  * Plugin Name:       Charitable - Mollie
  * Plugin URI:        https://github.com/Charitable/Charitable-Mollie
+<<<<<<< HEAD
  * Description:       Take advantage of low fees with Mollie and start accepting payments with Apple Pay, credit card, PayPal, Klarna, iDEAL and more.
+=======
+ * Description:       Accept donations using Mollie.
+>>>>>>> 70bcf89658cdfd203655001afd22f5c31dce9fd3
  * Version:           1.0.0-beta.1
  * Author:            WP Charitable
  * Author URI:        https://www.wpcharitable.com

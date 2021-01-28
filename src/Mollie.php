@@ -30,7 +30,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Mollie' ) ) :
 	class Mollie {
 
 		/** Plugin version. */
-		const VERSION = '1.0.0';
+		const VERSION = '1.0.0-beta.1';
 
 		/** The extension name. */
 		const NAME = 'Charitable Mollie';
