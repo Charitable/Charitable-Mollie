@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2021-01-28T00:59:05+00:00\n"
+"POT-Creation-Date: 2021-01-28T02:47:56+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.4.0\n"
 "X-Domain: charitable-mollie\n"
@@ -23,7 +23,7 @@ msgid "https://github.com/Charitable/Charitable-Mollie"
 msgstr ""
 
 #. Description of the plugin
-msgid "Accept donations using Mollie."
+msgid "Take advantage of low fees with Mollie and start accepting payments with Apple Pay, credit card, PayPal, Klarna, iDEAL and more."
 msgstr ""
 
 #. Author of the plugin
@@ -35,17 +35,17 @@ msgid "https://www.wpcharitable.com"
 msgstr ""
 
 #. translators: %s: link to activate Charitable
-#: charitable-mollie.php:49
+#: charitable-mollie.php:53
 msgid "Charitable Mollie requires Charitable! Please <a href=\"%s\">activate it</a> to continue."
 msgstr ""
 
 #. translators: %s: link to install Charitable
-#: charitable-mollie.php:52
+#: charitable-mollie.php:56
 msgid "Charitable Mollie requires Charitable! Please <a href=\"%s\">install it</a> to continue."
 msgstr ""
 
 #. translators: %s: link to update Charitable
-#: charitable-mollie.php:55
+#: charitable-mollie.php:59
 msgid "Charitable Mollie requires Charitable 1.6.45+! Please <a href=\"%s\">update Charitable</a> to continue."
 msgstr ""
 
