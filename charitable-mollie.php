@@ -3,7 +3,7 @@
  * Plugin Name:       Charitable - Mollie
  * Plugin URI:        https://github.com/Charitable/Charitable-Mollie
  * Description:       Accept donations using Mollie.
- * Version:           1.0.0
+ * Version:           1.0.0-beta.1
  * Author:            WP Charitable
  * Author URI:        https://www.wpcharitable.com
  * Requires at least: 5.0
