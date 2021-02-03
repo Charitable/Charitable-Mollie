@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "wpcharitable/charitable-extension-activation",
-            "version": "1.1.0",
+            "version": "1.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Charitable/Charitable-Extension-Activation.git",
-                "reference": "09f62cf3238254fd65accb7167ecc0586d46559e"
+                "reference": "26b5f371b73ae48c2ddab1a148a57e4597ee7080"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Charitable/Charitable-Extension-Activation/zipball/09f62cf3238254fd65accb7167ecc0586d46559e",
-                "reference": "09f62cf3238254fd65accb7167ecc0586d46559e",
+                "url": "https://api.github.com/repos/Charitable/Charitable-Extension-Activation/zipball/26b5f371b73ae48c2ddab1a148a57e4597ee7080",
+                "reference": "26b5f371b73ae48c2ddab1a148a57e4597ee7080",
                 "shasum": ""
             },
             "require": {
@@ -46,7 +46,7 @@
                 "wordpress",
                 "wpcharitable"
             ],
-            "time": "2020-09-23T04:14:48+00:00"
+            "time": "2021-02-03T00:48:06+00:00"
         }
     ],
     "packages-dev": [
