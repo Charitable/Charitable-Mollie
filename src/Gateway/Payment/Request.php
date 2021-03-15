@@ -186,7 +186,6 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 			 * @param array $data         Additional data received for the request.
 			 */
 			$this->request_data = apply_filters( 'charitable_mollie_payment_args', $this->request_data, $this->data_map );
-			error_log( var_export( $this->request_data, true ) );
 
 			try {
 				$this->response_data = $this->api()->post( 'payments', $this->request_data );

@@ -46,9 +46,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 		 *
 		 * @since 1.0.0
 		 *
-		 * @var   \Charitable\Pro\Mollie\Gateway\Api
+		 * @var   \Charitable\Pro\Mollie\Gateway\Api[]
 		 */
-		private $api;
+		private $api = array();
 
 		/**
 		 * Instantiate the gateway class, defining its key values.
@@ -178,11 +178,13 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 		 * @return \Charitable\Pro\Mollie\Gateway\Api
 		 */
 		public function api( $test_mode = null ) {
-			if ( ! isset( $this->api ) ) {
-				$this->api = new \Charitable\Pro\Mollie\Gateway\Api( $test_mode );
+			$test_mode = is_null( $test_mode ) ? charitable_get_option( 'test_mode' ) : $test_mode;
+
+			if ( ! isset( $this->api[ $test_mode ] ) ) {
+				$this->api[ $test_mode ] = new \Charitable\Pro\Mollie\Gateway\Api( $test_mode );
 			}
 
-			return $this->api;
+			return $this->api[ $test_mode ];
 		}
 
 		/**
@@ -194,7 +196,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 		 * @return boolean
 		 */
 		public function is_donation_refundable( \Charitable_Donation $donation ) {
-			return $this->api()->has_valid_api_key() && $donation->get_gateway_transaction_id();
+			return $this->api( $donation->get_test_mode( false ) )->has_valid_api_key()
+				&& $donation->get_gateway_transaction_id()
+				&& ! get_post_meta( $donation->ID, '_mollie_refunded', true );
 		}
 
 		/**
@@ -206,15 +210,20 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 		 * @return boolean
 		 */
 		public function refund_donation_from_dashboard( $donation_id ) {
+			/* The donation has been refunded previously. */
+			if ( get_post_meta( $donation_id, '_mollie_refunded', true ) ) {
+				return false;
+			}
+
 			$donation = charitable_get_donation( $donation_id );
 
 			if ( ! $donation ) {
 				return false;
 			}
 
-			$api = $this->api();
+			$api = $this->api( $donation->get_test_mode( false ) );
 
-			if ( ! $api->has_api_key() ) {
+			if ( ! $api->has_valid_api_key() ) {
 				return false;
 			}
 
@@ -224,9 +233,48 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 				return false;
 			}
 
-			/**
-			 * @todo Make refund.
-			 */
+			/* Post refund to Mollie. */
+			$response_data = $api->post(
+				'payments/' . $transaction . '/refunds',
+				array(
+					'amount' => array(
+						'currency' => charitable_get_currency(),
+						'value'    => number_format( $donation->get_total_donation_amount( true ), 2 ),
+					)
+				),
+			);
+
+			/* Check for an error. */
+			if ( false === $response_data ) {
+				$response = $this->api()->get_last_response();
+				$error    = is_wp_error( $response ) ? $response->get_error_message() : json_decode( wp_remote_retrieve_body( $response ) )->message;
+				$donation->log()->add(
+					sprintf(
+						__( 'Mollie refund failed with message: %s', 'charitable-mollie' ),
+						$error
+					)
+				);
+
+				return false;
+			}
+
+			/* Double-check the response status. */
+			if ( ! $response_data->status ) {
+				$donation->log()->add(
+					sprintf(
+						__( 'Mollie refund failed with message: %s', 'charitable-mollie' ),
+						$response_data->message
+					)
+				);
+
+				return false;
+			}
+
+			update_post_meta( $donation->ID, '_mollie_refunded', true );
+
+			$donation->log()->add( __( 'Refunded automatically from dashboard', 'charitable-paystack' ) );
+
+			return true;
 		}
 
 		/**
