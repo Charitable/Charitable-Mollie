@@ -213,6 +213,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Mollie' ) ) :
 		 * @return void
 		 */
 		private function attach_hooks_and_filters() {
+			add_filter( 'charitable_default_donation_fields', array( '\Charitable\Pro\Mollie\Fields\DonationFields', 'add_fields' ), 1 );
 		}
 
 		/**

@@ -98,6 +98,10 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 			/* Refund a donation from the dashboard. */
 			add_action( 'charitable_process_refund_mollie', array( $this, 'refund_donation_from_dashboard' ) );
 
+			/* Handle subscription cancellations. */
+			add_filter( 'charitable_recurring_can_cancel_mollie', array( $this, 'is_subscription_cancellable' ), 10, 2 );
+			add_action( 'charitable_process_cancellation_mollie', array( $this, 'cancel_subscription' ), 10, 2 );
+
 			if ( version_compare( charitable()->get_version(), '1.7', '<' ) ) {
 				/* Register payment processor. */
 				$this->load_forward_compatible_packages();
@@ -273,6 +277,84 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 			update_post_meta( $donation->ID, '_mollie_refunded', true );
 
 			$donation->log()->add( __( 'Refunded automatically from dashboard', 'charitable-paystack' ) );
+
+			return true;
+		}
+
+		/**
+		 * Checks whether a subscription can be cancelled.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @param  boolean                       $can_cancel Whether the subscription can be cancelled.
+		 * @param  Charitable_Recurring_Donation $donation   The donation object.
+		 * @return boolean
+		 */
+		public function is_subscription_cancellable( $can_cancel, \Charitable_Recurring_Donation $donation ) {
+			if ( ! $can_cancel ) {
+				return $can_cancel;
+			}
+
+			return $this->api( $donation->get_test_mode( false ) )->has_valid_api_key()
+				&& ! empty( $donation->get_gateway_subscription_id() )
+				&& ! get_post_meta( $donation->ID, '_mollie_cancelled', true );
+		}
+
+		/**
+		 * Cancel a recurring donation.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @param  boolean                       $cancelled Whether the subscription was cancelled successfully in the gateway.
+		 * @param  Charitable_Recurring_Donation $donation The donation object.
+		 * @return boolean
+		 */
+		public function cancel_subscription( $cancelled, \Charitable_Recurring_Donation $donation ) {
+			$subscription_id = $donation->get_gateway_subscription_id();
+
+			if ( ! $subscription_id ) {
+				return false;
+			}
+
+			$customer_id = $donation->get( 'mollie_customer_id' );
+
+			if ( ! $customer_id ) {
+				return false;
+			}
+
+			/* Disable the subscription. */
+			$response_data = $this->api( $donation->get_test_mode( false ) )->make_request(
+				'delete',
+				sprintf( 'customers/%1$s/subscriptions/%2$s', $customer_id, $subscription_id )
+			);
+
+			/* Check for an error. */
+			if ( false === $response_data ) {
+				$response = $this->api()->get_last_response();
+				$error    = is_wp_error( $response ) ? $response->get_error_message() : json_decode( wp_remote_retrieve_body( $response ) )->message;
+				$donation->log()->add(
+					sprintf(
+						__( 'Mollie subscription cancellation failed with message: %s', 'charitable-mollie' ),
+						$error
+					)
+				);
+
+				return false;
+			}
+
+			/* Double-check the response status. */
+			if ( ! $response_data->status ) {
+				$donation->log()->add(
+					sprintf(
+						__( 'Mollie subscription cancellation failed with message: %s', 'charitable-mollie' ),
+						$response_data->message
+					)
+				);
+
+				return false;
+			}
+
+			update_post_meta( $donation->ID, '_mollie_cancelled', true );
 
 			return true;
 		}

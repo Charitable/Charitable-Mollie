@@ -239,15 +239,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		 * @return int|false
 		 */
 		public function get_donor_id() {
-			if ( ! isset( $this->donor_id ) ) {
-				if ( ! is_user_logged_in() ) {
-					$this->donor_id =  false;
-				}
-
-				$this->donor_id = charitable_get_user( get_current_user_id() )->get_donor_id();
-			}
-
-			return $this->donor_id;
+			return $this->data_map->get_donation()->get_donor_id();
 		}
 
 		/**
