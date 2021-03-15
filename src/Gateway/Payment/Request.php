@@ -95,6 +95,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 			}
 
 			$this->request_data                    = $this->data_map->get_data( array( 'amount', 'description', 'redirectUrl', 'webhookUrl', 'locale', 'metadata' ) );
+			$this->request_data['description']     = sprintf( '%1$s - %2$s', $this->data_map->get_full_name(), $this->request_data['description'] );
 			$this->request_data['amount']['value'] = $this->get_payment_amount();
 			$this->request_data['customerId']      = $customer_id;
 			$this->request_data['sequenceType']    = 0 === $this->data_map->donation_plan_id ? 'oneoff' : 'first';
