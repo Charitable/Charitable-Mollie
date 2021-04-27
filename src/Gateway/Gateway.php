@@ -102,6 +102,9 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 			add_filter( 'charitable_recurring_can_cancel_mollie', array( $this, 'is_subscription_cancellable' ), 10, 2 );
 			add_action( 'charitable_process_cancellation_mollie', array( $this, 'cancel_subscription' ), 10, 2 );
 
+			/* Update the donation after the donor returns from Mollie. */
+			add_action( 'wp', array( $this, 'process_return_after_payment' ) );
+
 			if ( version_compare( charitable()->get_version(), '1.7', '<' ) ) {
 				/* Register payment processor. */
 				$this->load_forward_compatible_packages();
@@ -357,6 +360,37 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 			update_post_meta( $donation->ID, '_mollie_cancelled', true );
 
 			return true;
+		}
+
+		/**
+		 * When the donor is returned from Mollie, check whether the payment was
+		 * confirmed or if it was cancelled, and process it accordingly.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return void
+		 */
+		public function process_return_after_payment() {
+			if ( ! charitable()->endpoints()->is_page( 'donation_receipt' ) ) {
+				return;
+			}
+
+			$donation_id = get_query_var( 'donation_id' );
+
+			/* Check whether the donation was cancelled. */
+			if ( 'charitable-cancelled' !== get_post_field( 'post_status', $donation_id, 'raw' ) ) {
+				return;
+			}
+
+			/* The donation was cancelled. Redirect the donor to the cancellation page. */
+			wp_safe_redirect(
+				charitable_get_permalink(
+					'donation_cancel_page',
+					array( 'donation_id' => $donation_id )
+				)
+			);
+
+			exit();
 		}
 
 		/**
