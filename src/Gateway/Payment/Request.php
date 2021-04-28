@@ -250,13 +250,7 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Payment\Request' ) ) :
 		 * @return string
 		 */
 		public function get_payment_amount() {
-			$amount = $this->data_map->get_amount();
-
-			if ( $this->data_map->cover_fees ) {
-				$amount = $this->data_map->total_donation_with_fees;
-			}
-
-			return number_format( $amount, 2 );
+			return number_format( $this->data_map->get_amount(), 2, '.', '' );
 		}
 	}
 
