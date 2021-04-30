@@ -376,21 +376,31 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Gateway' ) ) :
 			}
 
 			$donation_id = get_query_var( 'donation_id' );
+			$donation    = charitable_get_donation( $donation_id );
 
-			/* Check whether the donation was cancelled. */
-			if ( 'charitable-cancelled' !== get_post_field( 'post_status', $donation_id, 'raw' ) ) {
-				return;
+			/* Check whether the donation was cancelled or failed. */
+			switch ( $donation->get_status() ) {
+
+				/* The donation was cancelled. Redirect the donor to the cancellation page. */
+				case 'charitable-cancelled':
+					$redirect = charitable_get_permalink(
+						'donation_cancel_page',
+						array( 'donation_id' => $donation_id )
+					);
+					break;
+
+				case 'charitable-failed':
+					$redirect = charitable_get_permalink(
+						'campaign_donation_page',
+						array( 'campaign_id' => current( $donation->get_campaign_donations() )->campaign_id )
+					);
+					break;
 			}
 
-			/* The donation was cancelled. Redirect the donor to the cancellation page. */
-			wp_safe_redirect(
-				charitable_get_permalink(
-					'donation_cancel_page',
-					array( 'donation_id' => $donation_id )
-				)
-			);
-
-			exit();
+			if ( isset( $redirect ) ) {
+				wp_safe_redirect( $redirect );
+				exit();
+			}
 		}
 
 		/**

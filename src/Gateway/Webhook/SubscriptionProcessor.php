@@ -75,8 +75,6 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 			 */
 			$subscription_args = apply_filters( 'charitable_mollie_subscription_args', $subscription_args, $this->recurring_donation, $payment );
 
-			error_log( var_export( $subscription_args, true ) );
-
 			$api                = new Api( $this->donation->get( 'test_mode' ) );
 			$this->subscription = $api->post( 'customers/' . $payment->customerId . '/subscriptions', $subscription_args );
 
@@ -90,6 +88,19 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 			$this->set_response( __( 'Subscription Webhook: First payment processed', 'charitable' ) );
 
 			return true;
+		}
+
+		/**
+		 * Process a failed payment for a donation.
+		 *
+		 * @since  1.0.0
+		 *
+		 * @return boolean
+		 */
+		public function process_failed_payment() {
+			$this->interpreter->get_recurring_donation()->set_to_failed();
+
+			return parent::process_failed_payment();
 		}
 
 		/**
@@ -142,12 +153,11 @@ if ( ! class_exists( '\Charitable\Pro\Mollie\Gateway\Webhook\Processor' ) ) :
 		 * @return string
 		 */
 		public function get_subscription_amount() {
-			/* Handles support for Fee Relief. */
-			if ( $this->donation->get( 'cover_fees' ) ) {
-				return number_format( $this->donation->get( 'total_donation_with_fees' ), 2 );
-			}
+			$amount = $this->donation->get( 'cover_fees' )
+				? \Charitable_Currency::get_instance()->cast_to_decimal_format( $this->donation->get( 'total_donation_with_fees' ) )
+				: $this->donation->get_total_donation_amount( true );
 
-			return number_format( $this->donation->get_total_donation_amount( true ), 2 );
+			return number_format( $amount, 2, '.', '' );
 		}
 
 		/**
